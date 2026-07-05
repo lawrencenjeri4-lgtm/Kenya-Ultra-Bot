@@ -24,7 +24,7 @@ const path = require("path");
 
 const logger = require("./lib/logger");
 const store = require("./lib/store");
-const serialize = require("./lib/serialise");
+const serialize = require("./lib/serialize");
 
 const commandHandler = require("./handlers/commandHandler");
 const { loadPlugins } = require("./handlers/pluginLoader");
