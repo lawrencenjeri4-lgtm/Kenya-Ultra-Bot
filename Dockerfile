@@ -1,18 +1,20 @@
 FROM node:20-slim
 
-# sharp needs these for sticker/image processing
+# Install system packages required by sharp and npm git dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     libvips-dev \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package*.json ./
+
 RUN npm install --omit=dev
 
 COPY . .
 
-# Session/database data should be mounted as a volume in production
 VOLUME ["/app/session", "/app/database"]
 
 CMD ["node", "index.js"]
