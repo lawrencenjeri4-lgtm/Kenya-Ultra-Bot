@@ -147,7 +147,7 @@ async function startBot() {
 
     if (
         process.env.PAIRING_NUMBER &&
-        !sock.authState.creds.registered
+        !state.creds.registered
     ) {
 
         try {
