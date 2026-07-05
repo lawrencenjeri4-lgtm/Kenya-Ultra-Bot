@@ -1,7 +1,7 @@
 FROM node:20-slim
 
 # sharp needs these for sticker/image processing
-RUN apt-get update && apt-get install -y --no-install-recursive \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips-dev \
     && rm -rf /var/lib/apt/lists/*
 
