@@ -28,6 +28,8 @@ const serialize = require("./lib/serialize");
 
 const commandHandler = require("./handlers/commandHandler");
 const { loadPlugins } = require("./handlers/pluginLoader");
+// Prevent multiple bot instances
+let reconnecting = false;
 
 // Load plugins
 loadPlugins();
@@ -123,11 +125,20 @@ async function startBot() {
 
                 process.exit(0);
 
-            } else {
+           } else {
 
-                logger.warn("Connection lost. Reconnecting...");
+    if (reconnecting) return;
 
-                startBot();
+    reconnecting = true;
+
+    logger.warn("Connection lost. Reconnecting in 5 seconds...");
+
+    setTimeout(() => {
+        reconnecting = false;
+        startBot();
+    }, 5000);
+
+            }
 
             }
 
@@ -142,32 +153,44 @@ async function startBot() {
     sock.ev.on("creds.update", saveCreds);
 
     // =========================
-    // Pairing Code (Future Web Pair)
-    // =========================
+// Pairing Code
+// =========================
 
-    if (
-        process.env.PAIRING_NUMBER &&
-        !state.creds.registered
-    ) {
+let pairingRequested = false;
 
-        try {
+if (
+    process.env.PAIRING_NUMBER &&
+    !state.creds.registered &&
+    !pairingRequested
+) {
 
-            const code = await sock.requestPairingCode(
-                process.env.PAIRING_NUMBER
-            );
+    pairingRequested = true;
 
-            logger.line();
-            logger.info(`Pairing Code: ${code}`);
-            logger.line();
+    try {
 
-        } catch (err) {
+        logger.info("Generating pairing code...");
 
-            logger.error("Failed to generate pairing code.");
-            console.log(err);
+        const code = await sock.requestPairingCode(
+            process.env.PAIRING_NUMBER.trim()
+        );
 
-        }
+        logger.line();
+        logger.success(`PAIRING CODE: ${code}`);
+        logger.line();
+
+        logger.info(
+            "Open WhatsApp → Linked Devices → Link with Phone Number"
+        );
+
+    } catch (err) {
+
+        pairingRequested = false;
+        logger.error("Failed to generate pairing code.");
+        console.error(err);
 
     }
+
+}
         // =========================
     // Incoming Messages
     // =========================
