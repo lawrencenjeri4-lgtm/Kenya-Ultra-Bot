@@ -30,6 +30,7 @@ const commandHandler = require("./handlers/commandHandler");
 const { loadPlugins } = require("./handlers/pluginLoader");
 // Prevent multiple bot instances
 let reconnecting = false;
+let pairingRequested = false;
 
 // Load plugins
 loadPlugins();
@@ -115,36 +116,33 @@ async function startBot() {
 
         if (connection === "close") {
 
-            const statusCode =
-                lastDisconnect?.error?.output?.statusCode;
+    const statusCode =
+        lastDisconnect?.error?.output?.statusCode;
 
-            if (statusCode === DisconnectReason.loggedOut) {
+    if (statusCode === DisconnectReason.loggedOut) {
 
-                logger.error("Session logged out.");
-                logger.error("Delete the session folder and pair again.");
+        logger.error("Session logged out.");
+        logger.error("Delete the session folder and pair again.");
 
-                process.exit(0);
+        process.exit(0);
 
-           } else {
+    } else {
 
-    if (reconnecting) return;
+        if (reconnecting) return;
 
-    reconnecting = true;
+        reconnecting = true;
 
-    logger.warn("Connection lost. Reconnecting in 5 seconds...");
+        logger.warn("Connection lost. Reconnecting in 5 seconds...");
 
-    setTimeout(() => {
-        reconnecting = false;
-        startBot();
-    }, 5000);
+        setTimeout(() => {
+            reconnecting = false;
+            startBot();
+        }, 5000);
 
-            }
+    }
 
-            }
-
-        }
-
-    });
+});
+                
 
     // =========================
     // Save Credentials
@@ -155,8 +153,6 @@ async function startBot() {
     // =========================
 // Pairing Code
 // =========================
-
-let pairingRequested = false;
 
 if (
     process.env.PAIRING_NUMBER &&
