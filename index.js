@@ -276,23 +276,7 @@ sock.ev.on("connection.update", async (update) => {
                     clearTimeout(reconnectTimer);
                 }
 
-                reconnectTimer = setTimeout(async () => {
-
-                    try {
-
-                        logger.info("Restarting Kenya-Ultra...");
-
-                        if (sock?.ws) {
-                            sock.ws.close();
-                        }
-
-                    } catch (e) {}
-
-                    reconnecting = false;
-
-                    startBot();
-
-                }, 5000);
+                logger.warn("Reconnect disabled while debugging.");
 
             }        
 });
