@@ -28,6 +28,7 @@ const {
 const fs = require("fs");
 const path = require("path");
 const P = require("pino");
+const QRCode = require("qrcode");
 
 //==================================================
 // Internal Modules
@@ -69,6 +70,10 @@ let sock = null;
 let reconnecting = false;
 
 let reconnectTimer = null;
+
+let pairingRequested = false;
+
+let lastQRCode = null;
 
 //==================================================
 // Start Bot
@@ -154,8 +159,38 @@ sock.ev.on("connection.update", async (update) => {
     //--------------------------------------------------
     
     if (qr) {
-        logger.info("📱 QR Code generated! Scan it with WhatsApp on your phone.");
-        logger.info("WhatsApp → Linked Devices → Link a Device");
+        lastQRCode = qr;
+        
+        logger.line();
+        logger.info("📱 QR CODE GENERATED!");
+        logger.line();
+        
+        // Generate QR code image and save it
+        try {
+            await QRCode.toFile(
+                path.join(__dirname, "qr.png"),
+                qr,
+                {
+                    errorCorrectionLevel: 'H',
+                    type: 'image/png',
+                    quality: 0.95,
+                    margin: 1,
+                    width: 300
+                }
+            );
+            logger.success("✅ QR code saved to: ./qr.png");
+        } catch (err) {
+            logger.error("Failed to save QR code image");
+            console.error(err);
+        }
+
+        logger.info("📲 SCAN OPTIONS:");
+        logger.info("1. Terminal: Look for the QR code grid above ↑");
+        logger.info("2. File: Check the qr.png file in your project root");
+        logger.line();
+        logger.info("📱 On your phone:");
+        logger.info("   Settings → Linked Devices → Link a Device");
+        logger.line();
     }
 
     //--------------------------------------------------
@@ -165,6 +200,50 @@ sock.ev.on("connection.update", async (update) => {
 if (connection === "connecting") {
 
     logger.info("Connecting to WhatsApp...");
+
+    //--------------------------------------------------
+    // Pairing Manager
+    //--------------------------------------------------
+
+    if (
+        process.env.PAIRING_NUMBER &&
+        !state.creds.registered &&
+        !pairingRequested
+    ) {
+
+        pairingRequested = true;
+
+        try {
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            logger.info("Generating Pairing Code...");
+
+            const code = await sock.requestPairingCode(
+                process.env.PAIRING_NUMBER.trim()
+            );
+
+            logger.line();
+            logger.success(`✅ PAIRING CODE: ${code}`);
+            logger.line();
+            logger.info("📱 Alternative method (if QR doesn't work):");
+            logger.info("1. Open WhatsApp on your phone");
+            logger.info("2. Go to Settings → Linked Devices → Link with Phone Number");
+            logger.info("3. Enter this code when prompted");
+            logger.info("⏱️  Code expires in 60 seconds");
+            logger.line();
+
+        } catch (err) {
+
+            pairingRequested = false;
+
+            logger.error("❌ Failed to generate pairing code.");
+            logger.error(`Error details: ${err.message}`);
+            console.error(err);
+
+        }
+
+    }
 
 }
 
@@ -191,8 +270,9 @@ if (connection === "connecting") {
     if (connection === "open") {
 
         reconnecting = false;
+        pairingRequested = false;
 
-        logger.success("Connected Successfully!");
+        logger.success("✅ Connected Successfully!");
 
         logger.info(
             `Bot : ${sock.user?.name || "Unknown"}`
@@ -274,6 +354,18 @@ if (connection === "connecting") {
     return sock;
 
 }
+
+//==================================================
+// API Route - Get Current QR Code (for website)
+//==================================================
+
+function getQRCode() {
+    return lastQRCode;
+}
+
+// Export for use in a web server
+module.exports = { startBot, getQRCode };
+
 //==================================================
 // Global Error Handlers
 //==================================================
