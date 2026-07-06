@@ -98,22 +98,7 @@ async function startBot() {
         version
     } = await fetchLatestBaileysVersion();
     
-  //==================================================
-    // Bind Store
-    //==================================================
-
-    if (store?.bind) {
-
-        store.bind(sock.ev);
-
-    }
-
-    //==================================================
-    // Save Credentials
-    //==================================================
-
-    sock.ev.on("creds.update", saveCreds);
-
+  
     //==================================================
     // Create WhatsApp Socket
     //==================================================
@@ -163,6 +148,7 @@ sock.ev.on("connection.update", async (update) => {
         connection,
         lastDisconnect
     } = update;
+    const reason = lastDisconnect?.error?.output?.statusCode;
 
     //--------------------------------------------------
     // Connecting
@@ -277,7 +263,7 @@ sock.ev.on("connection.update", async (update) => {
                 }, 5000);
 
             }        
-
+});
 
         //==================================================
     // Incoming Messages
