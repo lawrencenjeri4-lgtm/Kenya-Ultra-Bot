@@ -303,3 +303,129 @@ async function startBot() {
 
     });
 
+    //==================================================
+// BLOCK 5/10
+// Message Handler
+//==================================================
+
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+
+        try {
+
+            if (type !== "notify") return;
+
+            const msg = messages[0];
+
+            if (!msg?.message) return;
+
+            if (msg.key?.remoteJid === "status@broadcast") return;
+
+            // Serialize message
+            const m = await serialize(sock, msg);
+
+            // Execute commands
+            await commandHandler(sock, m);
+
+        } catch (err) {
+
+            logger.error("Message Handler Error");
+
+            console.error(err);
+
+        }
+
+    });
+
+    //==================================================
+    // Process Error Handlers
+    //==================================================
+
+    process.removeAllListeners("uncaughtException");
+    process.removeAllListeners("unhandledRejection");
+
+    process.on("uncaughtException", (err) => {
+
+        logger.error("Uncaught Exception");
+
+        console.error(err);
+
+    });
+
+    process.on("unhandledRejection", (reason) => {
+
+        logger.error("Unhandled Promise Rejection");
+
+        console.error(reason);
+
+    });
+
+    return sock;
+
+}
+
+//==================================================
+// BLOCK 6/10
+// Graceful Shutdown
+//==================================================
+
+process.on("SIGINT", () => {
+
+    logger.warn("Stopping Kenya-Ultra...");
+
+    try {
+
+        if (sock) {
+            sock.end();
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+
+    process.exit(0);
+
+});
+
+process.on("SIGTERM", () => {
+
+    logger.warn("Stopping Kenya-Ultra...");
+
+    try {
+
+        if (sock) {
+            sock.end();
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+
+    process.exit(0);
+
+});
+
+//==================================================
+// BLOCK 7/10
+// Start Kenya-Ultra
+//==================================================
+
+startBot()
+    .then(() => {
+
+        logger.success("Kenya-Ultra is now running.");
+
+    })
+    .catch((err) => {
+
+        logger.error("Failed to start Kenya-Ultra.");
+
+        console.error(err);
+
+        process.exit(1);
+
+    });
+
+//==================================================
+// END OF FILE
+//==================================================
+
