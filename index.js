@@ -1,14 +1,25 @@
-// ============================================
+//==================================================
+// BLOCK 1/10
 // Kenya-Ultra WhatsApp Bot
 // Developed by Lucid Tech Solutions
 // GitHub: https://github.com/lawrencenjeri4-lgtm/Kenya-Ultra-Bot
-// ============================================
+//==================================================
 
-// Auto install dependencies
+//==================================================
+// Auto Installer
+//==================================================
+
 require("./install");
 
-// Environment variables
+//==================================================
+// Environment Variables
+//==================================================
+
 require("dotenv").config();
+
+//==================================================
+// Baileys
+//==================================================
 
 const {
     default: makeWASocket,
@@ -18,24 +29,41 @@ const {
     Browsers
 } = require("@whiskeysockets/baileys");
 
+//==================================================
+// Node Modules
+//==================================================
+
 const P = require("pino");
 const fs = require("fs");
 const path = require("path");
+
+//==================================================
+// Kenya-Ultra Libraries
+//==================================================
 
 const logger = require("./lib/logger");
 const store = require("./lib/store");
 const serialize = require("./lib/serialize");
 
+//==================================================
+// Handlers
+//==================================================
+
 const commandHandler = require("./handlers/commandHandler");
 const { loadPlugins } = require("./handlers/pluginLoader");
-// Prevent multiple bot instances
-let reconnecting = false;
-let pairingRequested = false;
 
-// Load plugins
+//==================================================
+// BLOCK 2/10
+// Global Variables & Session Manager
+//==================================================
+
+// Load Plugins
 loadPlugins();
 
-// Session folder
+//==================================================
+// Session Folder
+//==================================================
+
 const SESSION_DIR = path.join(__dirname, "session");
 
 if (!fs.existsSync(SESSION_DIR)) {
@@ -44,9 +72,25 @@ if (!fs.existsSync(SESSION_DIR)) {
     });
 }
 
-// =========================
-// Start Bot
-// =========================
+//==================================================
+// Global Variables
+//==================================================
+
+// Current WhatsApp Socket
+let sock = null;
+
+// Prevent duplicate pairing requests
+let pairingRequested = false;
+
+// Prevent reconnect spam
+let reconnectTimer = null;
+
+// Track if bot is already reconnecting
+let reconnecting = false;
+
+//==================================================
+// Start Kenya-Ultra
+//==================================================
 
 async function startBot() {
 
@@ -54,24 +98,39 @@ async function startBot() {
     logger.bot("Starting Kenya-Ultra...");
     logger.line();
 
+    //==============================================
+    // Authentication State
+    //==============================================
+
     const {
         state,
         saveCreds
     } = await useMultiFileAuthState(SESSION_DIR);
 
-    const { version } = await fetchLatestBaileysVersion();
+    //==============================================
+    // Latest Baileys Version
+    //==============================================
 
-    const sock = makeWASocket({
+    const {
+        version
+    } = await fetchLatestBaileysVersion();
+
+//==================================================
+// BLOCK 3/10
+// Create WhatsApp Socket
+//==================================================
+
+    sock = makeWASocket({
 
         version,
 
         browser: Browsers.macOS("Kenya-Ultra"),
 
+        auth: state,
+
         logger: P({
             level: "silent"
         }),
-
-        auth: state,
 
         syncFullHistory: false,
 
@@ -79,17 +138,32 @@ async function startBot() {
 
         markOnlineOnConnect: true,
 
-        generateHighQualityLinkPreview: true
+        generateHighQualityLinkPreview: true,
+
+        fireInitQueries: true,
+
+        emitOwnEvents: false
 
     });
 
-    // Bind message store
+    //==================================================
+    // Bind Store
+    //==================================================
+
     if (store?.bind) {
         store.bind(sock.ev);
     }
-        // =========================
-    // Connection Updates
-    // =========================
+
+    //==================================================
+    // Save Credentials
+    //==================================================
+
+    sock.ev.on("creds.update", saveCreds);
+
+//==================================================
+// BLOCK 4/10
+// Connection Manager
+//==================================================
 
     sock.ev.on("connection.update", async (update) => {
 
@@ -98,150 +172,134 @@ async function startBot() {
             lastDisconnect
         } = update;
 
+        //--------------------------------------------------
+        // Connecting
+        //--------------------------------------------------
+
         if (connection === "connecting") {
+
             logger.info("Connecting to WhatsApp...");
+
         }
 
+        //--------------------------------------------------
+        // Open
+        //--------------------------------------------------
+
         if (connection === "open") {
+
+            reconnecting = false;
+            pairingRequested = false;
 
             logger.success("Kenya-Ultra Connected Successfully!");
 
             if (sock.user) {
-                logger.info(`Logged in as: ${sock.user.name || "Unknown"}`);
-                logger.info(`Bot Number: ${sock.user.id.split(":")[0]}`);
+
+                logger.info(
+                    `Logged in as: ${sock.user.name || "Unknown"}`
+                );
+
+                logger.info(
+                    `Bot Number: ${sock.user.id.split(":")[0]}`
+                );
+
             }
 
             logger.line();
+
+            return;
+
         }
+
+        //--------------------------------------------------
+        // Generate Pairing Code
+        //--------------------------------------------------
+
+        if (
+            connection === "connecting" &&
+            process.env.PAIRING_NUMBER &&
+            !state.creds.registered &&
+            !pairingRequested
+        ) {
+
+            pairingRequested = true;
+
+            try {
+
+                logger.info("Generating Pairing Code...");
+
+                const code =
+                    await sock.requestPairingCode(
+                        process.env.PAIRING_NUMBER.trim()
+                    );
+
+                logger.line();
+
+                logger.success(
+                    `PAIRING CODE : ${code}`
+                );
+
+                logger.line();
+
+                logger.info(
+                    "WhatsApp > Linked Devices > Link with Phone Number"
+                );
+
+            } catch (err) {
+
+                pairingRequested = false;
+
+                logger.error("Failed to generate pairing code.");
+
+                console.error(err);
+
+            }
+
+        }
+
+        //--------------------------------------------------
+        // Connection Closed
+        //--------------------------------------------------
 
         if (connection === "close") {
 
-    const statusCode =
-        lastDisconnect?.error?.output?.statusCode;
+            const reason =
+                lastDisconnect?.error?.output?.statusCode;
 
-    if (statusCode === DisconnectReason.loggedOut) {
+            logger.warn(
+                `Connection Closed (${reason})`
+            );
 
-        logger.error("Session logged out.");
-        logger.error("Delete the session folder and pair again.");
+            if (reason === DisconnectReason.loggedOut) {
 
-        process.exit(0);
+                logger.error("Session Logged Out.");
 
-    } else {
+                logger.error(
+                    "Delete the session folder and pair again."
+                );
 
-        if (reconnecting) return;
+                process.exit(0);
 
-        reconnecting = true;
+            }
 
-        logger.warn("Connection lost. Reconnecting in 5 seconds...");
+            if (reconnecting) return;
 
-        setTimeout(() => {
-            reconnecting = false;
-            startBot();
-        }, 5000);
+            reconnecting = true;
 
-    }
+            if (reconnectTimer)
+                clearTimeout(reconnectTimer);
 
-    }
-});
-                
+            reconnectTimer = setTimeout(() => {
 
-    // =========================
-    // Save Credentials
-    // =========================
+                logger.info("Reconnecting...");
 
-    sock.ev.on("creds.update", saveCreds);
+                reconnecting = false;
 
-    // =========================
-// Pairing Code
-// =========================
+                startBot();
 
-if (
-    process.env.PAIRING_NUMBER &&
-    !state.creds.registered &&
-    !pairingRequested
-) {
-
-    pairingRequested = true;
-
-    try {
-
-        logger.info("Generating pairing code...");
-
-        const code = await sock.requestPairingCode(
-            process.env.PAIRING_NUMBER.trim()
-        );
-
-        logger.line();
-        logger.success(`PAIRING CODE: ${code}`);
-        logger.line();
-
-        logger.info(
-            "Open WhatsApp → Linked Devices → Link with Phone Number"
-        );
-
-    } catch (err) {
-
-        pairingRequested = false;
-        logger.error("Failed to generate pairing code.");
-        console.error(err);
-
-    }
-
-}
-        // =========================
-    // Incoming Messages
-    // =========================
-
-    sock.ev.on("messages.upsert", async ({ messages, type }) => {
-
-        try {
-
-            if (type !== "notify") return;
-
-            let msg = messages[0];
-
-            if (!msg.message) return;
-
-            if (msg.key && msg.key.remoteJid === "status@broadcast") return;
-
-            // Serialize message
-            const m = await serialize(sock, msg);
-
-            // Handle commands
-            await commandHandler(sock, m);
-
-        } catch (err) {
-
-            logger.error("Message Handler Error");
-            console.error(err);
+            }, 5000);
 
         }
 
     });
 
-    // =========================
-    // Process Error Handlers
-    // =========================
-
-    process.on("uncaughtException", (err) => {
-        logger.error("Uncaught Exception");
-        console.error(err);
-    });
-
-    process.on("unhandledRejection", (reason) => {
-        logger.error("Unhandled Promise Rejection");
-        console.error(reason);
-    });
-
-    return sock;
-}
-
-// =========================
-// Start Kenya-Ultra
-// =========================
-
-startBot().catch(err => {
-    logger.error("Failed to start Kenya-Ultra");
-    console.error(err);
-});
-                  
