@@ -205,7 +205,52 @@ sock.ev.on("connection.update", async (update) => {
         logger.info("Connecting to WhatsApp...");
 
     }
+            //--------------------------------------------------
+        // Pairing Manager
+        //--------------------------------------------------
 
+        if (
+            process.env.PAIRING_NUMBER &&
+            !state.creds.registered &&
+            !pairingRequested
+        ) {
+
+            pairingRequested = true;
+
+            try {
+
+                // Wait a moment before requesting the pairing code
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                logger.info("Generating Pairing Code...");
+
+                const code = await sock.requestPairingCode(
+                    process.env.PAIRING_NUMBER.trim()
+                );
+
+                logger.line();
+
+                logger.success(`PAIRING CODE : ${code}`);
+
+                logger.line();
+
+                logger.info(
+                    "WhatsApp → Linked Devices → Link with Phone Number"
+                );
+
+            } catch (err) {
+
+                pairingRequested = false;
+
+                logger.error("Failed to generate pairing code.");
+
+                console.error(err);
+
+            }
+
+        }
+
+    
     //--------------------------------------------------
     // Connected
     //--------------------------------------------------
@@ -231,58 +276,31 @@ sock.ev.on("connection.update", async (update) => {
 
     }
 
-    //--------------------------------------------------
-    // Closed
-    //--------------------------------------------------
+               //--------------------------------------------------
+            // Smart Reconnect
+            //--------------------------------------------------
 
-    if (connection === "close") {
-
-        const reason =
-            lastDisconnect?.error?.output?.statusCode;
-
-        logger.warn(
-            `Disconnected (${reason})`
-        );
-
-        switch (reason) {
-
-            case DisconnectReason.loggedOut:
-
-                logger.error(
-                    "Session Logged Out."
-                );
-
-                process.exit(0);
-
-                break;
-
-            case DisconnectReason.restartRequired:
-
-                logger.info(
-                    "Restart Required."
-                );
-
-                startBot();
-
-                break;
-
-            case DisconnectReason.connectionLost:
-
-            case DisconnectReason.connectionClosed:
-
-            case DisconnectReason.timedOut:
-
-            default:
+            if (reason !== DisconnectReason.loggedOut) {
 
                 if (reconnecting) return;
 
                 reconnecting = true;
 
-                logger.info(
-                    "Reconnecting in 5 seconds..."
-                );
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                }
 
-                setTimeout(() => {
+                reconnectTimer = setTimeout(async () => {
+
+                    try {
+
+                        logger.info("Restarting Kenya-Ultra...");
+
+                        if (sock?.ws) {
+                            sock.ws.close();
+                        }
+
+                    } catch (e) {}
 
                     reconnecting = false;
 
@@ -290,11 +308,8 @@ sock.ev.on("connection.update", async (update) => {
 
                 }, 5000);
 
-        }
+            }        
 
-    }
-
-});
 
         //==================================================
     // Incoming Messages
