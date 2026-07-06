@@ -84,7 +84,7 @@ async function startBot() {
     if (!process.env.PAIRING_NUMBER) {
 
         logger.warn(
-            "PAIRING_NUMBER is not set in your .env file. QR login is disabled (printQRInTerminal: false), so the bot has no way to authenticate."
+            "PAIRING_NUMBER is not set in your .env file. Falling back to QR code login."
         );
 
     }
@@ -123,7 +123,7 @@ async function startBot() {
             level: "silent"
         }),
 
-        printQRInTerminal: false,
+        printQRInTerminal: true,
 
         syncFullHistory: false,
 
