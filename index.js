@@ -10,6 +10,17 @@ require("./install");
 require("dotenv").config();
 
 //==================================================
+// Express Server Setup
+//==================================================
+
+const express = require("express");
+const cors = require("cors");
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+//==================================================
 // Baileys
 //==================================================
 
@@ -74,6 +85,14 @@ let reconnectTimer = null;
 let pairingRequested = false;
 
 let lastQRCode = null;
+
+let botStatus = "initializing";
+
+let botInfo = {
+    name: "Unknown",
+    number: "Unknown",
+    connected: false
+};
 
 //==================================================
 // Start Bot
@@ -160,6 +179,7 @@ sock.ev.on("connection.update", async (update) => {
     
     if (qr) {
         lastQRCode = qr;
+        botStatus = "qr_generated";
         
         logger.line();
         logger.info("📱 QR CODE GENERATED!");
@@ -186,7 +206,8 @@ sock.ev.on("connection.update", async (update) => {
 
         logger.info("📲 SCAN OPTIONS:");
         logger.info("1. Terminal: Look for the QR code grid above ↑");
-        logger.info("2. File: Check the qr.png file in your project root");
+        logger.info("2. API: GET http://localhost:3000/api/qr-code");
+        logger.info("3. File: Check the qr.png file in your project root");
         logger.line();
         logger.info("📱 On your phone:");
         logger.info("   Settings → Linked Devices → Link a Device");
@@ -200,6 +221,7 @@ sock.ev.on("connection.update", async (update) => {
 if (connection === "connecting") {
 
     logger.info("Connecting to WhatsApp...");
+    botStatus = "connecting";
 
     //--------------------------------------------------
     // Pairing Manager
@@ -257,6 +279,8 @@ if (connection === "connecting") {
             `Connection closed. Reason: ${reason || "unknown"} (${DisconnectReason[reason] || "no matching DisconnectReason"})`
         );
 
+        botStatus = "disconnected";
+
         if (lastDisconnect?.error) {
             console.error(lastDisconnect.error);
         }
@@ -271,15 +295,20 @@ if (connection === "connecting") {
 
         reconnecting = false;
         pairingRequested = false;
+        botStatus = "connected";
+
+        botInfo.name = sock.user?.name || "Unknown";
+        botInfo.number = sock.user?.id.split(":")[0] || "Unknown";
+        botInfo.connected = true;
 
         logger.success("✅ Connected Successfully!");
 
         logger.info(
-            `Bot : ${sock.user?.name || "Unknown"}`
+            `Bot : ${botInfo.name}`
         );
 
         logger.info(
-            `Number : ${sock.user?.id.split(":")[0]}`
+            `Number : ${botInfo.number}`
         );
 
         logger.line();
@@ -298,6 +327,7 @@ if (connection === "connecting") {
                     "Session logged out by WhatsApp. Delete the /session folder and restart to re-pair."
                 );
 
+                botStatus = "logged_out";
                 process.exit(1);
 
             } else {
@@ -356,15 +386,72 @@ if (connection === "connecting") {
 }
 
 //==================================================
-// API Route - Get Current QR Code (for website)
+// API ROUTES
 //==================================================
 
-function getQRCode() {
-    return lastQRCode;
-}
+/**
+ * GET /api/qr-code
+ * Returns current QR code as base64 image
+ */
+app.get("/api/qr-code", async (req, res) => {
+    try {
+        if (!lastQRCode) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "QR code not yet generated. Bot is initializing..." 
+            });
+        }
 
-// Export for use in a web server
-module.exports = { startBot, getQRCode };
+        // Generate base64 image
+        const qrImage = await QRCode.toDataURL(lastQRCode, {
+            errorCorrectionLevel: 'H',
+            type: 'image/png',
+            quality: 0.95,
+            margin: 1,
+            width: 300
+        });
+
+        res.json({
+            success: true,
+            qrImage: qrImage,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (err) {
+        logger.error("Error generating QR code");
+        console.error(err);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to generate QR code",
+            error: err.message 
+        });
+    }
+});
+
+/**
+ * GET /api/status
+ * Returns bot connection status
+ */
+app.get("/api/status", (req, res) => {
+    res.json({
+        success: true,
+        status: botStatus,
+        bot: botInfo,
+        timestamp: new Date().toISOString()
+    });
+});
+
+/**
+ * GET /api/health
+ * Health check endpoint
+ */
+app.get("/api/health", (req, res) => {
+    res.json({
+        success: true,
+        message: "Bot API is running",
+        timestamp: new Date().toISOString()
+    });
+});
 
 //==================================================
 // Global Error Handlers
@@ -424,14 +511,27 @@ process.on("SIGTERM", () => {
     process.exit(0);
 
 });
+
 //==================================================
-// Start Kenya-Ultra
+// Start Bot & Express Server
 //==================================================
+
+const PORT = process.env.PORT || 3000;
 
 startBot()
     .then(() => {
 
         logger.success("Kenya-Ultra Started Successfully.");
+
+        // Start Express server
+        app.listen(PORT, () => {
+            logger.line();
+            logger.success(`🚀 Express Server running on port ${PORT}`);
+            logger.info(`📱 QR Code API: http://localhost:${PORT}/api/qr-code`);
+            logger.info(`🤖 Status API: http://localhost:${PORT}/api/status`);
+            logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
+            logger.line();
+        });
 
     })
     .catch((err) => {
@@ -443,4 +543,5 @@ startBot()
         process.exit(1);
 
     });
-            
+
+module.exports = { app, startBot };
