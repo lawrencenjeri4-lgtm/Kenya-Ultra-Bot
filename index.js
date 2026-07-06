@@ -70,8 +70,6 @@ let reconnecting = false;
 
 let reconnectTimer = null;
 
-let pairingRequested = false;
-
 //==================================================
 // Start Bot
 //==================================================
@@ -80,14 +78,6 @@ async function startBot() {
         logger.line();
     logger.bot("Starting Kenya-Ultra...");
     logger.line();
-
-    if (!process.env.PAIRING_NUMBER) {
-
-        logger.warn(
-            "PAIRING_NUMBER is not set in your .env file. Falling back to QR code login."
-        );
-
-    }
 
     //==================================================
     // Authentication
@@ -154,9 +144,19 @@ sock.ev.on("connection.update", async (update) => {
 
     const {
         connection,
-        lastDisconnect
+        lastDisconnect,
+        qr
     } = update;
     const reason = lastDisconnect?.error?.output?.statusCode;
+
+    //--------------------------------------------------
+    // QR Code Generated
+    //--------------------------------------------------
+    
+    if (qr) {
+        logger.info("📱 QR Code generated! Scan it with WhatsApp on your phone.");
+        logger.info("WhatsApp → Linked Devices → Link a Device");
+    }
 
     //--------------------------------------------------
 // Connecting
@@ -165,53 +165,6 @@ sock.ev.on("connection.update", async (update) => {
 if (connection === "connecting") {
 
     logger.info("Connecting to WhatsApp...");
-
-    //--------------------------------------------------
-    // Pairing Manager
-    //--------------------------------------------------
-
-    if (
-        process.env.PAIRING_NUMBER &&
-        !state.creds.registered &&
-        !pairingRequested
-    ) {
-
-        pairingRequested = true;
-
-        try {
-
-            await new Promise(resolve => setTimeout(resolve, 5000));
-
-            logger.info("Generating Pairing Code...");
-            logger.info(`Using phone number: ${process.env.PAIRING_NUMBER}`);
-
-            const code = await sock.requestPairingCode(
-                process.env.PAIRING_NUMBER.trim()
-            );
-
-            logger.line();
-            logger.success(`PAIRING CODE : ${code}`);
-            logger.line();
-
-            logger.info(
-                "WhatsApp → Linked Devices → Link with Phone Number"
-            );
-            
-            logger.info(
-                "⏱️  Code expires in 60 seconds. Scan it quickly!"
-            );
-
-        } catch (err) {
-
-            pairingRequested = false;
-
-            logger.error("Failed to generate pairing code.");
-            logger.error(`Error: ${err.message}`);
-            console.error(err);
-
-        }
-
-    }
 
 }
 
@@ -238,7 +191,6 @@ if (connection === "connecting") {
     if (connection === "open") {
 
         reconnecting = false;
-        pairingRequested = false;
 
         logger.success("Connected Successfully!");
 
