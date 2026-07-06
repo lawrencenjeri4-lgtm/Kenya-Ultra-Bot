@@ -98,39 +98,7 @@ async function startBot() {
         version
     } = await fetchLatestBaileysVersion();
     
-        //==================================================
-    // Socket Factory
-    //==================================================
-
-    sock = makeWASocket({
-
-        version,
-
-        auth: state,
-
-        browser: Browsers.macOS("Kenya-Ultra"),
-
-        logger: P({
-            level: "silent"
-        }),
-
-        printQRInTerminal: false,
-
-        syncFullHistory: false,
-
-        markOnlineOnConnect: true,
-
-        generateHighQualityLinkPreview: true,
-
-        connectTimeoutMs: 60000,
-
-        defaultQueryTimeoutMs: 60000,
-
-        keepAliveIntervalMs: 30000
-
-    });
-
-    //==================================================
+  //==================================================
     // Bind Store
     //==================================================
 
