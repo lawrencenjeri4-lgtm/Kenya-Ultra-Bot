@@ -81,6 +81,14 @@ async function startBot() {
     logger.bot("Starting Kenya-Ultra...");
     logger.line();
 
+    if (!process.env.PAIRING_NUMBER) {
+
+        logger.warn(
+            "PAIRING_NUMBER is not set in your .env file. QR login is disabled (printQRInTerminal: false), so the bot has no way to authenticate."
+        );
+
+    }
+
     //==================================================
     // Authentication
     //==================================================
@@ -159,6 +167,22 @@ sock.ev.on("connection.update", async (update) => {
         logger.info("Connecting to WhatsApp...");
 
     }
+
+    //--------------------------------------------------
+    // Closed / Disconnected
+    //--------------------------------------------------
+
+    if (connection === "close") {
+
+        logger.error(
+            `Connection closed. Reason: ${reason || "unknown"} (${DisconnectReason[reason] || "no matching DisconnectReason"})`
+        );
+
+        if (lastDisconnect?.error) {
+            console.error(lastDisconnect.error);
+        }
+
+    }
             //--------------------------------------------------
         // Pairing Manager
         //--------------------------------------------------
@@ -234,7 +258,15 @@ sock.ev.on("connection.update", async (update) => {
             // Smart Reconnect
             //--------------------------------------------------
 
-            if (reason !== DisconnectReason.loggedOut) {
+            if (reason === DisconnectReason.loggedOut) {
+
+                logger.error(
+                    "Session logged out by WhatsApp. Delete the /session folder and restart to re-pair."
+                );
+
+                process.exit(1);
+
+            } else {
 
                 if (reconnecting) return;
 
@@ -381,3 +413,4 @@ startBot()
         process.exit(1);
 
     });
+            
