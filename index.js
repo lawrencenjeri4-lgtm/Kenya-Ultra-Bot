@@ -159,14 +159,55 @@ sock.ev.on("connection.update", async (update) => {
     const reason = lastDisconnect?.error?.output?.statusCode;
 
     //--------------------------------------------------
-    // Connecting
+// Connecting
+//--------------------------------------------------
+
+if (connection === "connecting") {
+
+    logger.info("Connecting to WhatsApp...");
+
+    //--------------------------------------------------
+    // Pairing Manager
     //--------------------------------------------------
 
-    if (connection === "connecting") {
+    if (
+        process.env.PAIRING_NUMBER &&
+        !state.creds.registered &&
+        !pairingRequested
+    ) {
 
-        logger.info("Connecting to WhatsApp...");
+        pairingRequested = true;
+
+        try {
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            logger.info("Generating Pairing Code...");
+
+            const code = await sock.requestPairingCode(
+                process.env.PAIRING_NUMBER.trim()
+            );
+
+            logger.line();
+            logger.success(`PAIRING CODE : ${code}`);
+            logger.line();
+
+            logger.info(
+                "WhatsApp → Linked Devices → Link with Phone Number"
+            );
+
+        } catch (err) {
+
+            pairingRequested = false;
+
+            logger.error("Failed to generate pairing code.");
+            console.error(err);
+
+        }
 
     }
+
+}
 
     //--------------------------------------------------
     // Closed / Disconnected
@@ -183,52 +224,7 @@ sock.ev.on("connection.update", async (update) => {
         }
 
     }
-            //--------------------------------------------------
-        // Pairing Manager
-        //--------------------------------------------------
-
-        if (
-            process.env.PAIRING_NUMBER &&
-            !state.creds.registered &&
-            !pairingRequested
-        ) {
-
-            pairingRequested = true;
-
-            try {
-
-                // Wait a moment before requesting the pairing code
-                await new Promise(resolve => setTimeout(resolve, 3000));
-
-                logger.info("Generating Pairing Code...");
-
-                const code = await sock.requestPairingCode(
-                    process.env.PAIRING_NUMBER.trim()
-                );
-
-                logger.line();
-
-                logger.success(`PAIRING CODE : ${code}`);
-
-                logger.line();
-
-                logger.info(
-                    "WhatsApp → Linked Devices → Link with Phone Number"
-                );
-
-            } catch (err) {
-
-                pairingRequested = false;
-
-                logger.error("Failed to generate pairing code.");
-
-                console.error(err);
-
-            }
-
-        }
-
-    
+               
     //--------------------------------------------------
     // Connected
     //--------------------------------------------------
