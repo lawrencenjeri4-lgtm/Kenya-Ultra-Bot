@@ -180,9 +180,10 @@ if (connection === "connecting") {
 
         try {
 
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
             logger.info("Generating Pairing Code...");
+            logger.info(`Using phone number: ${process.env.PAIRING_NUMBER}`);
 
             const code = await sock.requestPairingCode(
                 process.env.PAIRING_NUMBER.trim()
@@ -195,12 +196,17 @@ if (connection === "connecting") {
             logger.info(
                 "WhatsApp → Linked Devices → Link with Phone Number"
             );
+            
+            logger.info(
+                "⏱️  Code expires in 60 seconds. Scan it quickly!"
+            );
 
         } catch (err) {
 
             pairingRequested = false;
 
             logger.error("Failed to generate pairing code.");
+            logger.error(`Error: ${err.message}`);
             console.error(err);
 
         }
