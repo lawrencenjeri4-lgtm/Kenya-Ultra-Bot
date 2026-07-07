@@ -286,7 +286,7 @@ if (connection === "connecting") {
         }
 
     }
-               
+                
     //--------------------------------------------------
     // Connected
     //--------------------------------------------------
@@ -317,7 +317,7 @@ if (connection === "connecting") {
 
     }
 
-               //--------------------------------------------------
+                //--------------------------------------------------
             // Smart Reconnect
             //--------------------------------------------------
 
@@ -345,7 +345,7 @@ if (connection === "connecting") {
             }        
 });
 
-        //==================================================
+         //==================================================
     // Incoming Messages
     //==================================================
 
@@ -389,43 +389,40 @@ if (connection === "connecting") {
 // API ROUTES
 //==================================================
 
-/**
- * GET /api/qr-code
- * Returns current QR code as base64 image
- */
+//==================================================
+// GET QR IMAGE
+//==================================================
+
 app.get("/api/qr-code", async (req, res) => {
-    try {
+
+    try { 
+
         if (!lastQRCode) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "QR code not yet generated. Bot is initializing..." 
-            });
+
+            return res.status(404).send("QR Code not available.");
+
         }
 
-        // Generate base64 image
-        const qrImage = await QRCode.toDataURL(lastQRCode, {
-            errorCorrectionLevel: 'H',
-            type: 'image/png',
-            quality: 0.95,
+        const buffer = await QRCode.toBuffer(lastQRCode, {
+
+            errorCorrectionLevel: "H",
             margin: 1,
-            width: 300
+            width: 350
+
         });
 
-        res.json({
-            success: true,
-            qrImage: qrImage,
-            timestamp: new Date().toISOString()
-        });
+        res.setHeader("Content-Type", "image/png");
+
+        res.send(buffer);
 
     } catch (err) {
-        logger.error("Error generating QR code");
+
         console.error(err);
-        res.status(500).json({ 
-            success: false, 
-            message: "Failed to generate QR code",
-            error: err.message 
-        });
+
+        res.status(500).send("Failed to generate QR.");
+
     }
+
 });
 
 /**
