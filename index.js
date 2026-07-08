@@ -316,15 +316,11 @@ sock.ev.on("connection.update", async (update) => {
 
         if (msg.message?.protocolMessage) return;
         
-        const m = await serialize(sock, msg);
+       const m = await serialize(sock, msg);
 
-        console.log("BODY:", m.body);
-        console.log("CHAT:", m.chat);
-        console.log("FROMME:", m.fromMe);
+if (!m) return;
 
-        console.log("Passing to commandHandler...");
-
-        await commandHandler(sock, m);
+await commandHandler(sock, m); 
 
     } catch (err) {
 
