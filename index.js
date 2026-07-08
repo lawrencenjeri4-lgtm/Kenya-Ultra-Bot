@@ -300,31 +300,37 @@ sock.ev.on("connection.update", async (update) => {
 
     sock.ev.on("messages.upsert", async ({ messages, type }) => {
 
-        try {
+    try {
 
-            if (type !== "notify") return;
+        console.log("EVENT:", type);
 
-            const msg = messages[0];
+        if (type !== "notify") return;
 
-            if (!msg?.message) return;
+        const msg = messages[0];
 
-            if (msg.key?.remoteJid === "status@broadcast") return;
+        console.log("RAW:", JSON.stringify(msg, null, 2));
 
-            // Serialize Message
-            const m = await serialize(sock, msg);
+        if (!msg?.message) return;
 
-            // Handle Commands
-            await commandHandler(sock, m);
+        if (msg.key?.remoteJid === "status@broadcast") return;
 
-        } catch (err) {
+        const m = await serialize(sock, msg);
 
-            logger.error("========== MESSAGE ERROR ==========");
-            console.error(err);
-            logger.error(err.stack);
+        console.log("BODY:", m.body);
+        console.log("CHAT:", m.chat);
+        console.log("FROMME:", m.fromMe);
 
-        }
+        console.log("Passing to commandHandler...");
 
-    });
+        await commandHandler(sock, m);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+
+});
 
     //==================================================
     // Return Socket
