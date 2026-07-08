@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { register } = require("../lib/command");
 
 function loadPlugins() {
     const pluginsDir = path.join(__dirname, "..", "plugins");
@@ -14,8 +15,11 @@ function loadPlugins() {
 
     for (const file of files) {
         try {
-            require(path.join(pluginsDir, file));
-            console.log(`✅ Loaded plugin: ${file}`);
+            const plugin = require(path.join(pluginsDir, file));
+
+            register(plugin);
+
+            console.log(`✅ Loaded plugin: ${plugin.name}`);
         } catch (err) {
             console.error(`❌ Failed to load ${file}`);
             console.error(err);
