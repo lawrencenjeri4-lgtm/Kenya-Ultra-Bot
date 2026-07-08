@@ -21,12 +21,23 @@ module.exports = {
 
     premium: false,
 
-    async execute(sock, m, args) {
+    async execute(sock, m) {
+
+        const start = Date.now();
 
         await m.react("🏓");
 
-        await m.reply("🏓 Pong!");
+        const speed = Date.now() - start;
+
+        await m.reply(
+`╭──〔 🏓 Kenya-Ultra Ping 〕──╮
+│
+│ ⚡ Speed: ${speed} ms
+│ 🤖 Status: Online
+│ 🚀 Response: Excellent
+│
+╰────────────────────╯`
+        );
 
     }
 };
-
