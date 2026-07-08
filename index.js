@@ -318,9 +318,9 @@ sock.ev.on("connection.update", async (update) => {
 
         } catch (err) {
 
-            logger.error("Message Handler Error");
-
+            logger.error("========== MESSAGE ERROR ==========");
             console.error(err);
+            logger.error(err.stack);
 
         }
 
