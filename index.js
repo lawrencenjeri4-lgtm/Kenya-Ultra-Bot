@@ -99,31 +99,18 @@ let botInfo = {
 //==================================================
 
 async function startBot() {
-        logger.line();
+
+    logger.line();
     logger.bot("Starting Kenya-Ultra...");
     logger.line();
 
-    //==================================================
-    // Authentication
-    //==================================================
+    pairingRequested = false;
 
-    const {
-        state,
-        saveCreds
-    } = await useMultiFileAuthState(SESSION_DIR);
+    const { state, saveCreds } =
+        await useMultiFileAuthState(SESSION_DIR);
 
-    //==================================================
-    // Latest Baileys Version
-    //==================================================
-
-    const {
-        version
-    } = await fetchLatestBaileysVersion();
-    
-  
-    //==================================================
-    // Create WhatsApp Socket
-    //==================================================
+    const { version } =
+        await fetchLatestBaileysVersion();
 
     sock = makeWASocket({
 
@@ -137,30 +124,39 @@ async function startBot() {
             level: "silent"
         }),
 
-        printQRInTerminal: true,
+        printQRInTerminal: false,
 
         syncFullHistory: false,
 
-        markOnlineOnConnect: true,
+        markOnlineOnConnect: false,
 
-        generateHighQualityLinkPreview: true
+        generateHighQualityLinkPreview: true,
+
+        defaultQueryTimeoutMs: 60000,
+
+        connectTimeoutMs: 60000,
+
+        keepAliveIntervalMs: 15000
 
     });
 
-    //==================================================
+    //--------------------------------------------------
+    // Save Credentials
+    //--------------------------------------------------
+
+    sock.ev.on("creds.update", saveCreds);
+
+    //--------------------------------------------------
     // Bind Store
-    //==================================================
+    //--------------------------------------------------
 
     if (store?.bind) {
+
         store.bind(sock.ev);
+
     }
 
     //==================================================
-    // Save Credentials
-    //==================================================
-
-    sock.ev.on("creds.update", saveCreds);
-        //==================================================
 // Advanced Connection Manager
 //==================================================
 
