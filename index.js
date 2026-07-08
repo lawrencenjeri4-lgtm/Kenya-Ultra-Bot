@@ -113,31 +113,14 @@ async function startBot() {
         await fetchLatestBaileysVersion();
 
     sock = makeWASocket({
-
         version,
-
         auth: state,
-
-        browser: Browsers.macOS("Kenya-Ultra"),
-
-        logger: P({
-            level: "silent"
-        }),
-
+        browser: Browsers.ubuntu("Chrome"),
+        logger: P({ level: "silent" }),
         printQRInTerminal: false,
-
         syncFullHistory: false,
-
         markOnlineOnConnect: false,
-
-        generateHighQualityLinkPreview: true,
-
-        defaultQueryTimeoutMs: 60000,
-
-        connectTimeoutMs: 60000,
-
-        keepAliveIntervalMs: 15000
-
+        generateHighQualityLinkPreview: true
     });
 
     //--------------------------------------------------
