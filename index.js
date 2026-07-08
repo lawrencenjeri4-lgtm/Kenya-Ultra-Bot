@@ -157,70 +157,92 @@ async function startBot() {
     }
 
     //==================================================
-// Advanced Connection Manager
+// Connection Manager
 //==================================================
 
 sock.ev.on("connection.update", async (update) => {
 
-    const {
-        connection,
-        lastDisconnect,
-        qr
-    } = update;
+    const { connection, lastDisconnect, qr } = update;
+
     const reason = lastDisconnect?.error?.output?.statusCode;
 
     //--------------------------------------------------
-    // QR Code Generated
+    // QR RECEIVED
     //--------------------------------------------------
-    
+
     if (qr) {
+
         lastQRCode = qr;
+
         botStatus = "qr_generated";
-        
+
         logger.line();
-        logger.info("📱 QR CODE GENERATED!");
+        logger.info("QR Code Generated");
         logger.line();
-        
-        // Generate QR code image and save it
+
         try {
+
             await QRCode.toFile(
                 path.join(__dirname, "qr.png"),
-                qr,
-                {
-                    errorCorrectionLevel: 'H',
-                    type: 'image/png',
-                    quality: 0.95,
-                    margin: 1,
-                    width: 300
-                }
+                qr
             );
-            logger.success("✅ QR code saved to: ./qr.png");
-        } catch (err) {
-            logger.error("Failed to save QR code image");
-            console.error(err);
+
+        } catch (e) {
+
+            console.error(e);
+
         }
 
-        logger.info("📲 SCAN OPTIONS:");
-        logger.info("1. Terminal: Look for the QR code grid above ↑");
-        logger.info("2. API: GET http://localhost:3000/api/qr-code");
-        logger.info("3. File: Check the qr.png file in your project root");
-        logger.line();
-        logger.info("📱 On your phone:");
-        logger.info("   Settings → Linked Devices → Link a Device");
-        logger.line();
     }
 
     //--------------------------------------------------
-// Connecting
-//--------------------------------------------------
+    // CONNECTING
+    //--------------------------------------------------
 
-if (connection === "connecting") {
+    if (connection === "connecting") {
 
-    logger.info("Connecting to WhatsApp...");
-    botStatus = "connecting";
+        botStatus = "connecting";
+
+        logger.info("Connecting to WhatsApp...");
+
+    }
 
     //--------------------------------------------------
-    // Pairing Manager
+    // OPEN
+    //--------------------------------------------------
+
+    if (connection === "open") {
+
+        botStatus = "connected";
+
+        reconnecting = false;
+
+        pairingRequested = false;
+
+        botInfo = {
+
+            name: sock.user?.name || "Unknown",
+
+            number: sock.user?.id?.split(":")[0] || "Unknown",
+
+            connected: true
+
+        };
+
+        logger.success("Connected Successfully!");
+
+        logger.info(`Bot : ${botInfo.name}`);
+
+        logger.info(`Number : ${botInfo.number}`);
+
+        logger.line();
+
+        return;
+
+    }
+
+    //--------------------------------------------------
+    // REQUEST PAIRING CODE
     //--------------------------------------------------
 
     if (
@@ -233,112 +255,60 @@ if (connection === "connecting") {
 
         try {
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            logger.info("Generating Pairing Code...");
+            await new Promise(r => setTimeout(r, 4000));
 
             const code = await sock.requestPairingCode(
+
                 process.env.PAIRING_NUMBER.trim()
+
             );
 
             logger.line();
-            logger.success(`✅ PAIRING CODE: ${code}`);
+
+            logger.success(`PAIR CODE : ${code}`);
+
             logger.line();
-            logger.info("📱 Alternative method (if QR doesn't work):");
-            logger.info("1. Open WhatsApp on your phone");
-            logger.info("2. Go to Settings → Linked Devices → Link with Phone Number");
-            logger.info("3. Enter this code when prompted");
-            logger.info("⏱️  Code expires in 60 seconds");
-            logger.line();
+
+            logger.info("Linked Devices → Link with Phone Number");
 
         } catch (err) {
 
             pairingRequested = false;
 
-            logger.error("❌ Failed to generate pairing code.");
-            logger.error(`Error details: ${err.message}`);
+            logger.error("Failed to generate Pair Code");
+
             console.error(err);
 
         }
 
     }
 
-}
-
     //--------------------------------------------------
-    // Closed / Disconnected
+    // CLOSE
     //--------------------------------------------------
 
     if (connection === "close") {
 
-        logger.error(
-            `Connection closed. Reason: ${reason || "unknown"} (${DisconnectReason[reason] || "no matching DisconnectReason"})`
-        );
+        logger.warn(`Disconnected (${reason})`);
 
-        botStatus = "disconnected";
+        if (reason === DisconnectReason.loggedOut) {
 
-        if (lastDisconnect?.error) {
-            console.error(lastDisconnect.error);
+            logger.error("Logged out.");
+
+            return;
+
         }
 
-    }
-                
-    //--------------------------------------------------
-    // Connected
-    //--------------------------------------------------
+        logger.info("Restarting socket...");
 
-    if (connection === "open") {
+        setTimeout(() => {
 
-        reconnecting = false;
-        pairingRequested = false;
-        botStatus = "connected";
+            startBot();
 
-        botInfo.name = sock.user?.name || "Unknown";
-        botInfo.number = sock.user?.id.split(":")[0] || "Unknown";
-        botInfo.connected = true;
-
-        logger.success("✅ Connected Successfully!");
-
-        logger.info(
-            `Bot : ${botInfo.name}`
-        );
-
-        logger.info(
-            `Number : ${botInfo.number}`
-        );
-
-        logger.line();
-
-        return;
+        }, 2000);
 
     }
 
-                //--------------------------------------------------
-            // Smart Reconnect
-            //--------------------------------------------------
-
-            if (reason === DisconnectReason.loggedOut) {
-
-                logger.error(
-                    "Session logged out by WhatsApp. Delete the /session folder and restart to re-pair."
-                );
-
-                botStatus = "logged_out";
-                process.exit(1);
-
-            } else {
-
-                if (reconnecting) return;
-
-                reconnecting = true;
-
-                if (reconnectTimer) {
-                    clearTimeout(reconnectTimer);
-                }
-
-                logger.warn("Reconnect disabled while debugging.");
-
-            }        
 });
 
          //==================================================
