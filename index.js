@@ -314,6 +314,8 @@ sock.ev.on("connection.update", async (update) => {
 
         if (msg.key?.remoteJid === "status@broadcast") return;
 
+        if (msg.message?.protocolMessage) return;
+        
         const m = await serialize(sock, msg);
 
         console.log("BODY:", m.body);
