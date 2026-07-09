@@ -1,51 +1,77 @@
-const { BOT_NAME, VERSION, PREFIX } = require("../config");
+const commands = require("../lib/command");
 
 module.exports = {
-
-    name: "menu",
-
-    aliases: ["help2"],
-
+    name: "Menu",
+    aliases: ["menu", "help"],
     category: "General",
+    description: "Displays the bot menu.",
+    usage: ".menu",
+    cooldown: 3,
 
-    desc: "Show command menu",
+    async execute(sock, m) {
 
-    async execute(sock, m, args) {
+        const prefix = process.env.PREFIX || ".";
 
-        const text = `
-╭━━━〔 ${BOT_NAME} 〕━━━⬣
+        const categoryIcons = {
+            General: "📂",
+            Utility: "🛠",
+            Download: "📥",
+            AI: "🤖",
+            Group: "👥",
+            Owner: "👑",
+            Fun: "🎮",
+            Search: "🔎",
+            Convert: "🔄",
+            Anime: "🌸",
+            Other: "📦"
+        };
 
-👋 Welcome to Kenya-Ultra
+        const allCommands = commands.all();
 
-📦 Version : ${VERSION}
-Prefix : ${PREFIX}
+        const grouped = {};
+
+        for (const cmd of allCommands) {
+
+            const category = cmd.category || "Other";
+
+            if (!grouped[category]) grouped[category] = [];
+
+            grouped[category].push(cmd);
+
+        }
+
+        let menu = `
+╭━━━〔 🤖 Kenya-Ultra 〕━━━⬣
+
+👋 Hello!
+
+⚡ Status : Online
+📦 Version : v1.0.0
+🔖 Prefix : ${prefix}
+📚 Commands : ${allCommands.length}
+📂 Categories : ${Object.keys(grouped).length}
 
 ━━━━━━━━━━━━━━
-
-📂 General
-• ${PREFIX}ping
-• ${PREFIX}alive
-• ${PREFIX}runtime
-• ${PREFIX}menu
-• ${PREFIX}help
-
-🤖 AI
-• ${PREFIX}gpt
-
-🎨 Media
-• ${PREFIX}sticker
-
-👑 Owner
-• ${PREFIX}restart
-• ${PREFIX}shutdown
-
-━━━━━━━━━━━━━━
-
-© Lucid Tech Solutions
 `;
 
-        await m.reply(text.trim());
+        for (const category of Object.keys(grouped).sort()) {
+
+            menu += `\n${categoryIcons[category] || "📦"} ${category}\n`;
+
+            for (const cmd of grouped[category]) {
+
+                menu += `┃ ${prefix}${cmd.name.toLowerCase()}\n`;
+
+            }
+
+        }
+
+        menu += `
+
+━━━━━━━━━━━━━━
+© Kenya-Ultra Bot`;
+
+        await m.reply(menu);
 
     }
 };
-
