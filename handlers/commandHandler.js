@@ -8,12 +8,36 @@ module.exports = async (sock, m) => {
 
         if (!m.body.startsWith(prefix)) return;
 
-        const args = m.body.slice(prefix.length).trim().split(/ +/);
+        const args = m.body
+            .slice(prefix.length)
+            .trim()
+            .split(/ +/);
+
         const cmd = args.shift().toLowerCase();
+
+        // ==========================
+        // Debug Logs
+        // ==========================
+        console.log("=================================");
+        console.log("PREFIX:", prefix);
+        console.log("BODY:", m.body);
+        console.log("CMD:", cmd);
 
         const command = commands.get(cmd);
 
-        if (!command) return;
+        console.log("FOUND COMMAND:", !!command);
+
+        if (!command) {
+            console.log("❌ Command not found");
+            return;
+        }
+
+        console.log("✅ Executing:", command.name);
+        console.log("=================================");
+
+        // ==========================
+        // Permission Checks
+        // ==========================
 
         if (command.owner && !m.isOwner) {
             return sock.sendMessage(m.chat, {
@@ -33,9 +57,14 @@ module.exports = async (sock, m) => {
             });
         }
 
+        // ==========================
+        // Execute Command
+        // ==========================
+
         await command.execute(sock, m, args);
 
     } catch (err) {
+        console.error("❌ Command Handler Error:");
         console.error(err);
     }
 };
