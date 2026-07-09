@@ -304,7 +304,15 @@ sock.ev.on("connection.update", async (update) => {
 
         console.log("EVENT:", type);
 
-        if (type !== "notify") return;
+        console.log("UPSERT TYPE:", type);
+
+const msg = messages[0];
+
+console.log("REMOTE:", msg?.key?.remoteJid);
+console.log("FROMME:", msg?.key?.fromMe);
+console.log("MESSAGE:", JSON.stringify(msg?.message, null, 2));
+
+if (type !== "notify") return;
 
         const msg = messages[0];
 
