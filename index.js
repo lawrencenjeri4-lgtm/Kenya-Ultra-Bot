@@ -314,8 +314,7 @@ console.log("MESSAGE:", JSON.stringify(msg?.message, null, 2));
 
 if (type !== "notify") return;
 
-        const msg = messages[0];
-
+        
         console.log("RAW:", JSON.stringify(msg, null, 2));
 
         if (!msg?.message) return;
