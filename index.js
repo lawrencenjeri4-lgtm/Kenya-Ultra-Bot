@@ -327,7 +327,7 @@ if (type !== "notify") return;
 
 if (!m) return;
 
-// await commandHandler(sock, m);
+await commandHandler(sock, m);
 
     } catch (err) {
 
