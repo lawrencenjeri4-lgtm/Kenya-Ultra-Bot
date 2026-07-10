@@ -10,5 +10,13 @@ module.exports = {
         numbers: [
             "254754938511"
         ]
+    },
+
+    settings: {
+        mode: "private",
+        autoRead: false,
+        autoTyping: false,
+        autoRecording: false,
+        autoReact: false
     }
 };
