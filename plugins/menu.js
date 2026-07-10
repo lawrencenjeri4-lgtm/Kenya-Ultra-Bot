@@ -1,79 +1,72 @@
 const fs = require("fs");
-const commands = require("../lib/command");
+const path = require("path");
+const { all } = require("../lib/command");
 
 module.exports = {
-    name: "Menu",
-    aliases: ["menu", "help"],
+    name: "menu",
+    aliases: ["help", "commands"],
     category: "General",
     description: "Displays the bot menu.",
     usage: ".menu",
-    cooldown: 3,
 
     async execute(sock, m) {
 
-        const prefix = process.env.PREFIX || ".";
+        const commands = all();
 
-        const categoryIcons = {
-            General: "📂",
-            Utility: "🛠",
-            Download: "📥",
-            AI: "🤖",
-            Group: "👥",
-            Owner: "👑",
-            Fun: "🎮",
-            Search: "🔎",
-            Convert: "🔄",
-            Anime: "🌸",
-            Other: "📦"
-        };
+        const categories = {};
 
-        const allCommands = commands.all();
-        const grouped = {};
+        for (const cmd of commands) {
+            const cat = cmd.category || "Other";
 
-        for (const cmd of allCommands) {
-            const category = cmd.category || "Other";
+            if (!categories[cat]) categories[cat] = [];
 
-            if (!grouped[category]) grouped[category] = [];
-
-            grouped[category].push(cmd);
+            categories[cat].push(cmd.name);
         }
 
-        let menu = `╭━━━〔 🤖 Kenya-Ultra 〕━━━⬣
+        let text = `╭━━━〔 🇰🇪 Kenya-Ultra Bot 〕━━━╮
+┃
+┃ 👤 User : ${m.fromMe ? "Owner" : "User"}
+┃ 🤖 Version : v1.0.0
+┃ ⚡ Prefix : .
+┃ 📦 Commands : ${commands.length}
+┃
+╰━━━━━━━━━━━━━━━━━━╯
 
-👋 Hello ${m.pushName || "User"}
+`;
 
-⚡ Status: Online
-📦 Version: v1.0.0
-🔖 Prefix: ${prefix}
-📚 Commands: ${allCommands.length}
-📂 Categories: ${Object.keys(grouped).length}
+        for (const category in categories) {
 
-━━━━━━━━━━━━━━`;
+            text += `╭─〔 ${category.toUpperCase()} 〕\n`;
 
-        for (const category of Object.keys(grouped).sort()) {
+            for (const cmd of categories[category]) {
+                text += `│ ◦ .${cmd}\n`;
+            }
 
-            menu += `\n\n${categoryIcons[category] || "📦"} ${category}\n`;
-
-            grouped[category]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .forEach(cmd => {
-                    menu += `┃ ${prefix}${cmd.name.toLowerCase()}\n`;
-                });
-
+            text += `╰──────────────\n\n`;
         }
 
-        menu += `
+        text += "© Kenya-Ultra";
 
-━━━━━━━━━━━━━━
-© Kenya-Ultra Bot
-Powered by Lucid Tech Solutions`;
+        const image = path.join(__dirname, "..", "assets", "menu-banner.png");
 
-        await sock.sendMessage(m.chat, {
-            image: fs.readFileSync("./assets/menu-banner.png"),
-            caption: menu
-        }, {
-            quoted: m.key
-        });
+        if (fs.existsSync(image)) {
+
+            await sock.sendMessage(
+                m.chat,
+                {
+                    image: fs.readFileSync(image),
+                    caption: text
+                },
+                {
+                    quoted: m.key
+                }
+            );
+
+        } else {
+
+            await m.reply(text);
+
+        }
 
     }
 };
