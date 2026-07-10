@@ -1,10 +1,13 @@
 const commands = require("../lib/command");
+const config = require("../config");
 
 module.exports = async (sock, m) => {
+
     try {
+
         if (!m.body) return;
 
-        const prefix = process.env.PREFIX || ".";
+        const prefix = config.bot.prefix || ".";
 
         if (!m.body.startsWith(prefix)) return;
 
@@ -15,56 +18,54 @@ module.exports = async (sock, m) => {
 
         const cmd = args.shift().toLowerCase();
 
-        // ==========================
-        // Debug Logs
-        // ==========================
-        console.log("=================================");
-        console.log("PREFIX:", prefix);
-        console.log("BODY:", m.body);
-        console.log("CMD:", cmd);
-
         const command = commands.get(cmd);
 
-        console.log("FOUND COMMAND:", !!command);
+        if (!command) return;
 
-        if (!command) {
-            console.log("❌ Command not found");
+        //===========================
+        // BOT MODE
+        //===========================
+
+        const mode = config.settings.mode;
+
+        if (mode === "private" && !m.isOwner) {
             return;
         }
 
-        console.log("✅ Executing:", command.name);
-        console.log("=================================");
+        if (mode === "self" && !m.fromMe) {
+            return;
+        }
 
-        // ==========================
-        // Permission Checks
-        // ==========================
+        if (mode === "group" && !m.isGroup) {
+            return;
+        }
+
+        //===========================
+        // COMMAND RESTRICTIONS
+        //===========================
 
         if (command.owner && !m.isOwner) {
-            return sock.sendMessage(m.chat, {
-                text: "❌ This command is for the bot owner only."
-            });
+            return m.reply("❌ This command is only for the bot owner.");
         }
 
         if (command.group && !m.isGroup) {
-            return sock.sendMessage(m.chat, {
-                text: "❌ This command can only be used in groups."
-            });
+            return m.reply("❌ This command only works in groups.");
         }
 
         if (command.private && m.isGroup) {
-            return sock.sendMessage(m.chat, {
-                text: "❌ This command can only be used in private chat."
-            });
+            return m.reply("❌ This command only works in private chat.");
         }
 
-        // ==========================
-        // Execute Command
-        // ==========================
+        //===========================
+        // RUN COMMAND
+        //===========================
 
         await command.execute(sock, m, args);
 
     } catch (err) {
-        console.error("❌ Command Handler Error:");
+
         console.error(err);
+
     }
+
 };
