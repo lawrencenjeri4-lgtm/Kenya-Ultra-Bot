@@ -1,3 +1,4 @@
+const fs = require("fs");
 const commands = require("../lib/command");
 
 module.exports = {
@@ -27,51 +28,52 @@ module.exports = {
         };
 
         const allCommands = commands.all();
-
         const grouped = {};
 
         for (const cmd of allCommands) {
-
             const category = cmd.category || "Other";
 
             if (!grouped[category]) grouped[category] = [];
 
             grouped[category].push(cmd);
-
         }
 
-        let menu = `
-╭━━━〔 🤖 Kenya-Ultra 〕━━━⬣
+        let menu = `╭━━━〔 🤖 Kenya-Ultra 〕━━━⬣
 
-👋 Hello!
+👋 Hello ${m.pushName || "User"}
 
-⚡ Status : Online
-📦 Version : v1.0.0
-🔖 Prefix : ${prefix}
-📚 Commands : ${allCommands.length}
-📂 Categories : ${Object.keys(grouped).length}
+⚡ Status: Online
+📦 Version: v1.0.0
+🔖 Prefix: ${prefix}
+📚 Commands: ${allCommands.length}
+📂 Categories: ${Object.keys(grouped).length}
 
-━━━━━━━━━━━━━━
-`;
+━━━━━━━━━━━━━━`;
 
         for (const category of Object.keys(grouped).sort()) {
 
-            menu += `\n${categoryIcons[category] || "📦"} ${category}\n`;
+            menu += `\n\n${categoryIcons[category] || "📦"} ${category}\n`;
 
-            for (const cmd of grouped[category]) {
-
-                menu += `┃ ${prefix}${cmd.name.toLowerCase()}\n`;
-
-            }
+            grouped[category]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(cmd => {
+                    menu += `┃ ${prefix}${cmd.name.toLowerCase()}\n`;
+                });
 
         }
 
         menu += `
 
 ━━━━━━━━━━━━━━
-© Kenya-Ultra Bot`;
+© Kenya-Ultra Bot
+Powered by Lucid Tech Solutions`;
 
-        await m.reply(menu);
+        await sock.sendMessage(m.chat, {
+            image: fs.readFileSync("./assets/menu-banner.png"),
+            caption: menu
+        }, {
+            quoted: m.key
+        });
 
     }
 };
