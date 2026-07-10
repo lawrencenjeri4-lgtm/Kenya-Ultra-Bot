@@ -12,13 +12,14 @@ module.exports = {
     async execute(sock, m) {
 
         const commands = all();
-
         const categories = {};
 
         for (const cmd of commands) {
             const cat = cmd.category || "Other";
 
-            if (!categories[cat]) categories[cat] = [];
+            if (!categories[cat]) {
+                categories[cat] = [];
+            }
 
             categories[cat].push(cmd.name);
         }
@@ -35,7 +36,6 @@ module.exports = {
 `;
 
         for (const category in categories) {
-
             text += `╭─〔 ${category.toUpperCase()} 〕\n`;
 
             for (const cmd of categories[category]) {
@@ -51,16 +51,10 @@ module.exports = {
 
         if (fs.existsSync(image)) {
 
-            await sock.sendMessage(
-                m.chat,
-                {
-                    image: fs.readFileSync(image),
-                    caption: text
-                },
-                {
-                    quoted: m.key
-                }
-            );
+            await m.reply(text, {
+                image: fs.readFileSync(image),
+                caption: text
+            });
 
         } else {
 
