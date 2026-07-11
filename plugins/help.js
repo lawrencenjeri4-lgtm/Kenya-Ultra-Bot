@@ -1,21 +1,22 @@
-const { PREFIX } = require("../config");
+const { getSettings } = require("../lib/settings");
 
 module.exports = {
     name: "help",
-    aliases: ["commands"],
+    aliases: ["cmds"],
 
     category: "General",
 
-    async execute(sock, m, args) {
+    async execute(sock, m) {
+
+        const settings = getSettings();
 
         m.reply(
 `Use
 
-${PREFIX}menu
+${settings.prefix}menu
 
 to view all available commands.`
         );
 
     }
 };
-
