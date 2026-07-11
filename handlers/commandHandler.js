@@ -1,4 +1,5 @@
 const commands = require("../lib/command");
+const config = require("../config");
 
 module.exports = async (sock, m) => {
     try {
@@ -34,6 +35,18 @@ module.exports = async (sock, m) => {
 
         console.log("✅ Executing:", command.name);
         console.log("=================================");
+
+        // ==========================
+        // BOT MODE
+        // ==========================
+
+        const mode = config.settings?.mode || "public";
+
+        if (mode === "private" && !m.isOwner) return;
+
+        if (mode === "self" && !m.fromMe) return;
+
+        if (mode === "group" && !m.isGroup) return;
 
         // ==========================
         // Permission Checks
