@@ -1,5 +1,5 @@
 const commands = require("../lib/command");
-const config = require("../config");
+const { getSettings } = require("../lib/settings");
 
 module.exports = async (sock, m) => {
     try {
@@ -40,7 +40,8 @@ module.exports = async (sock, m) => {
         // BOT MODE
         // ==========================
 
-        const mode = config.settings?.mode || "public";
+        const settings = getSettings();
+const mode = settings.mode || "public";
 
         if (mode === "private" && !m.isOwner) return;
 
