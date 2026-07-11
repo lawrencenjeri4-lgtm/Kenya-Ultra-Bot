@@ -1,1 +1,8 @@
-
+{
+  "mode": "public",
+  "prefix": ".",
+  "autoread": false,
+  "autotyping": false,
+  "autorecording": false,
+  "autoreact": false
+}
