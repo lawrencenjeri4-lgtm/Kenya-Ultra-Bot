@@ -1,64 +1,37 @@
-const config = require("../config");
+const { getSettings, saveSettings } = require("../lib/settings");
 
 module.exports = {
     name: "mode",
-    aliases: ["botmode"],
+    aliases: [],
     category: "Owner",
-    description: "Change the bot operating mode.",
-    usage: ".mode <public|private|self|group>",
+    description: "Change bot mode.",
+    usage: ".mode <public|private|group|self>",
     owner: true,
 
     async execute(sock, m, args) {
 
-        if (!args[0]) {
-            return m.reply(`╭━━〔 🤖 Kenya-Ultra Modes 〕━━╮
-┃
-┃ 🌍 public  → Everyone can use commands
-┃ 🔒 private → Only owner can use commands
-┃ 👤 self    → Only bot account messages
-┃ 👥 group   → Commands only work in groups
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━╯
+        const mode = (args[0] || "").toLowerCase();
 
-Example:
-.mode public`);
-        }
+        const modes = ["public", "private", "group", "self"];
 
-        const newMode = args[0].toLowerCase();
-
-        const validModes = [
-            "public",
-            "private",
-            "self",
-            "group"
-        ];
-
-        if (!validModes.includes(newMode)) {
-            return m.reply(`❌ Invalid mode.
+        if (!modes.includes(mode)) {
+            return m.reply(
+`❌ Invalid mode.
 
 Available modes:
 • public
 • private
-• self
-• group`);
+• group
+• self`
+            );
         }
 
-        const oldMode = config.settings.mode;
+        const settings = getSettings();
 
-        if (oldMode === newMode) {
-            return m.reply(`ℹ️ Kenya-Ultra is already running in *${newMode.toUpperCase()}* mode.`);
-        }
+        settings.mode = mode;
 
-        config.settings.mode = newMode;
+        saveSettings(settings);
 
-        await m.reply(`╭━━〔 ✅ Mode Updated 〕━━╮
-┃
-┃ Old Mode : ${oldMode.toUpperCase()}
-┃ New Mode : ${newMode.toUpperCase()}
-┃
-┃ 🤖 Kenya-Ultra is now
-┃ running in ${newMode.toUpperCase()} mode.
-┃
-╰━━━━━━━━━━━━━━━━━━╯`);
+        await m.reply(`✅ Bot mode changed to *${mode.toUpperCase()}*`);
     }
 };
