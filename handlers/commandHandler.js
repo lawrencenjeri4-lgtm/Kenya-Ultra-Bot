@@ -5,7 +5,8 @@ module.exports = async (sock, m) => {
     try {
         if (!m.body) return;
 
-        const prefix = process.env.PREFIX || ".";
+        const settings = getSettings();
+const prefix = settings.prefix || ".";
 
         if (!m.body.startsWith(prefix)) return;
 
