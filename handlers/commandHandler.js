@@ -5,7 +5,10 @@ module.exports = async (sock, m) => {
     try {
         if (!m.body) return;
 
-        const prefix = process.env.PREFIX || ".";
+        const { getSettings } = require("../lib/settings");
+
+const settings = getSettings();
+const prefix = settings.prefix || ".";
 
         if (!m.body.startsWith(prefix)) return;
 
