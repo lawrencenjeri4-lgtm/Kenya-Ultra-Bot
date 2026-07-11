@@ -29,6 +29,7 @@ module.exports = {
             }
 
             categories[category].push(cmd.name);
+
         }
 
         let text = `╭━━━〔 🇰🇪 Kenya-Ultra Bot 〕━━━╮
