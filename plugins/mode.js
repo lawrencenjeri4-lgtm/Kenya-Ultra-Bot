@@ -1,8 +1,8 @@
 const { getSettings, saveSettings } = require("../lib/settings");
 
 module.exports = {
-    name: "mode",
-    aliases: [],
+    name: "setmode",
+aliases: ["mode"],
     category: "Owner",
     description: "Change bot mode.",
     usage: ".mode <public|private|group|self>",
