@@ -1,16 +1,20 @@
 const fs = require("fs");
 const path = require("path");
 const { all } = require("../lib/command");
+const { getSettings } = require("../lib/settings");
 
 module.exports = {
 
     name: "menu",
-    aliases: ["help", "commands"],
+    aliases: ["m"],
     category: "General",
     description: "Displays the command menu.",
     usage: ".menu",
 
     async execute(sock, m) {
+
+        const settings = getSettings();
+        const prefix = settings.prefix || ".";
 
         const commands = all();
 
@@ -20,8 +24,9 @@ module.exports = {
 
             const category = cmd.category || "Other";
 
-            if (!categories[category])
+            if (!categories[category]) {
                 categories[category] = [];
+            }
 
             categories[category].push(cmd.name);
         }
@@ -30,7 +35,7 @@ module.exports = {
 ┃
 ┃ 👤 User : ${m.fromMe ? "Owner" : "User"}
 ┃ 🤖 Version : v1.0.0
-┃ ⚡ Prefix : .
+┃ ⚡ Prefix : ${prefix}
 ┃ 📦 Commands : ${commands.length}
 ┃
 ╰━━━━━━━━━━━━━━━━━━╯
@@ -43,7 +48,7 @@ module.exports = {
 
             for (const cmd of categories[category]) {
 
-                text += `│ ◦ .${cmd}\n`;
+                text += `│ ◦ ${prefix}${cmd}\n`;
 
             }
 
