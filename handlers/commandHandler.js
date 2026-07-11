@@ -41,7 +41,6 @@ const prefix = settings.prefix || ".";
         // BOT MODE
         // ==========================
 
-        const settings = getSettings();
 const mode = settings.mode || "public";
 
         if (mode === "private" && !m.isOwner) return;
