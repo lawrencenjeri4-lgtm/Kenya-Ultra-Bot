@@ -1,7 +1,7 @@
 module.exports = {
-    name: "Ping",
+    name: "ping",
 
-    aliases: ["ping", "p"],
+    aliases: ["p"],
 
     category: "General",
 
