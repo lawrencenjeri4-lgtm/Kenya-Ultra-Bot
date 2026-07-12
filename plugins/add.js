@@ -10,9 +10,6 @@ module.exports = {
         if (!m.isAdmin)
             return m.reply("❌ You must be a group admin.");
 
-        if (!m.isBotAdmin)
-            return m.reply("❌ I need admin privileges.");
-
         if (!args[0])
             return m.reply("Example:\n.add 254712345678");
 
@@ -20,13 +17,28 @@ module.exports = {
             args[0].replace(/\D/g, "") +
             "@s.whatsapp.net";
 
-        await sock.groupParticipantsUpdate(
-            m.chat,
-            [number],
-            "add"
-        );
+        try {
 
-        m.reply("✅ User added successfully.");
+            const result = await sock.groupParticipantsUpdate(
+                m.chat,
+                [number],
+                "add"
+            );
+
+            console.log(result);
+
+            return m.reply("✅ User added successfully.");
+
+        } catch (err) {
+
+            console.error(err);
+
+            return m.reply(
+                "❌ Failed to add user.\n" +
+                (err.message || err)
+            );
+
+        }
 
     }
 };
