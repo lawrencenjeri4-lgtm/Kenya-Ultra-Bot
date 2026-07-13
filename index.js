@@ -484,9 +484,9 @@ startBot()
         app.listen(PORT, () => {
             logger.line();
             logger.success(`🚀 Express Server running on port ${PORT}`);
-            logger.info(`📱 QR Code API: http://localhost:${PORT}/api/qr-code`);
-            logger.info(`🤖 Status API: http://localhost:${PORT}/api/status`);
-            logger.info(`❤️  Health Check: http://localhost:${PORT}/api/health`);
+            logger.info(`📱 QR Code API: https://kenya-ultra.lovable.app:${PORT}/api/qr-code`);
+            logger.info(`🤖 Status API: https://kenya-ultra.lovable.app:${PORT}/api/status`);
+            logger.info(`❤️  Health Check: https://kenya-ultra.lovable.app:${PORT}/api/health`);
             logger.line();
         });
 
