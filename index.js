@@ -473,7 +473,7 @@ process.on("SIGTERM", () => {
 // Start Bot & Express Server
 //==================================================
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 443;
 
 startBot()
     .then(() => {
